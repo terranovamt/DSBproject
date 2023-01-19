@@ -49,6 +49,7 @@ param3= metric_df['value'].min()
 param4= metric_df['value'].mean()
 param4= metric_df['value'].std()
 
+
 #########################################################################
 
 from confluent_kafka import Producer
