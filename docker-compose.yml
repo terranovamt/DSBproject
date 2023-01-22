@@ -12,7 +12,7 @@ services:
   # data_storage:
   #   build:
   #     context: . # path relativo da docker-compose a Dockerfile
-  #     dockerfile: datastorage.Dockerfile
+  #     dockerfile: datastorage.Dockerfilecd\\
   #   restart: always
 
   # data_retrieval:
