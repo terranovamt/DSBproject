@@ -1,0 +1,14 @@
+Indirizzo prometheus: http://15.160.61.227:29090
+
+docker network create ...
+
+docker network ls #per verificare il network
+
+docker-compose up -d 
+
+docker ps #per verificare i container e predere l'id di sql
+
+docker exec -it 85ee8ccdc2ce bash 
+
+mysql -u root -p test_DSB  #password root
+
