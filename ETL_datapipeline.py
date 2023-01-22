@@ -1,53 +1,137 @@
+from prometheus_api_client import PrometheusConnect, MetricsList, MetricSnapshotDataFrame, MetricRangeDataFrame
+from prometheus_api_client.utils import parse_datetime
+#from confluent_kafka import Producer
+#from flask import Flask, jsonify, request
+from datetime import timedelta
+from statsmodels.tsa.stattools import acf, adfuller, kpss
+from statsmodels.graphics.tsaplots import plot_acf
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+import json
+import time
 import csv
 #import openpyxl
 import pandas as pd
-from prometheus_api_client import PrometheusConnect, MetricsList, MetricSnapshotDataFrame, MetricRangeDataFrame
-from datetime import timedelta
-from prometheus_api_client.utils import parse_datetime
 
 
-#Connection to Prometheus
+def delivery_callback(err, msg):
+    if err:
+        sys.stderr.write('%% Message failed delivery: %s\n' % err)
+    else:
+        sys.stderr.write('%% Message delivered to %s partition [%d] @ %d\n' %
+                         (msg.topic(), msg.partition(), msg.offset()))
+
+configuration = {'bootstrap.servers' : 'broker_kafka:9092'}
+topic = "prometheusdata"
+
+#try:
+#    producer = Producer(**configuration)
+#    print('Producer Connected')
+#except KafkaExec as error:
+#    print('Error: ', error)
+
+print('#--------------------Connecting-------------#\n')
+print('                     ..........              \n')
+print('                     ..........              \n')
+print('                     ..........              \n')
 prom = PrometheusConnect(url="http://15.160.61.227:29090", disable_ssl=True)
-
-#Query on Prom
-#calcoli un set di metadati con i relativi valori (autocorrelazione? stazionarietà? stagionalità?)
-
-start_time = parse_datetime("1h")
-end_time = parse_datetime("now")
-chunk_size = timedelta(minutes=5)
-label_config = {'job': 'summary'} 
+print('#------------Connection succed !------------#\n')
+#print('#                     Now you can get on Prometheus all metrics you want ;)                     #\n')
+#--------------------------------------------FIRST-----------------------------------------------------#
+#----------------------------------------PROMETHEUS' QUERY---------------------------------------------#
+time_to_evaluate = ['1h', '3h', '12h']
 metrics_to_evaluate = ['cpuLoad', 'availableMem', 'diskUsage']
-for metric in metrics_to_evaluate:
-    metric_data = prom.get_metric_range_data(
-        metric_name=metric,
-        label_config=label_config,
-        start_time=start_time,
-        end_time=end_time,
-        chunk_size=chunk_size,
-    )
-    metric_object_list = MetricsList(metric_data) #metric_object_list will be initialized as
-                                                  #a list of Metric objects for all the
-                                                  #metrics downloaded using get_metric query
-     #    my_metric_object = metric_object_list[0] # one of the metrics from the list
-    #print(my_metric_object)
+end_time = parse_datetime("now")
+chunk_size = timedelta(minutes=10)
+label_config = {'job': 'summary'} 
+for time in time_to_evaluate:       
+    start_time = parse_datetime(time)
+    for metric in metrics_to_evaluate:
+        metric_data = prom.get_metric_range_data(
+            metric_name=metric,
+            label_config=label_config,
+            start_time=start_time,
+            end_time=end_time,
+            chunk_size=chunk_size,
+        )
+        metric_df = MetricRangeDataFrame(metric_data) # Creazione del data frame
+        print('METRIC_DF -> ', metric_df)
+        #metric_object_list = MetricsList(metric_data)
+        minValues_list = []
+        maxValues_list = []
+        meanValues_list = []
+        stdValues_list = []
+        #--------------------------Evaluation of MAX, min, mean and std_dev----------------------------#
+        max_value = round(metric_df['value'].max(), 2)
+        min_value = round(metric_df['value'].min(), 2)
+        mean_value = round(metric_df['value'].mean(), 2)
+        std_value = round(metric_df['value'].std(), 2)
+        print("\nMonitoring done!\n")
+        print("------>MAX value: ", max_value)
+        print("------>min value: ", min_value)
+        print("------>MEAN value: ", mean_value)
+        print("------>STD_dev value: ", std_value)
+        print('                     ..........              \n')
+        print('                     ..........              \n')
+        
+        #-----------------Evaluation of AutoCorrelation, Stationarity & Seasonability-------------------#
+        print("Evaluation of AutoCorrelation on going ...\n")
+        autocorrelation = acf(metric_df['value']) 
+        autocorrelation_list = autocorrelation.tolist()
+        del autocorrelation_list[0]
+        for autocorrelation_i in autocorrelation_list:
+            print('----> ', autocorrelation_i)
 
-    fields = ['Date', 'Time', 'CPULoad'] 
-  
-    for item in metric_object_list:
-        print(item)
+        print("Evaluation of Stationariety on going ...\n")
+        stationarity = adfuller(metric_df['value'],autolag='AIC') 
+        print('----> ', stationarity)
+        #stationarity_list = stationarity.tolist()
+        #for stationarity_i in stationarity_list:
+        #    print('----> ', stationarity_i)
 
-    metric_object_list.to_csv('./export_dataframe.csv')
+        #seasonability = seasonal_decompose(metric_df['value'], model='additive', period=10)
+        #seasonability_list = seasonability.seasonal.tolist() 
+        #for seasonability_i in seasonability_list:
+        #    print('----> ', seasonability_i)
+
+########################################################################################################
 
 
-#- calcoli il valore di max, min, avg, dev_std della metriche per 1h,3h, 12h;
 
-metric_df = MetricRangeDataFrame(metric_data)
-print(metric_df.head())
-param1= "cpuLoad"
-param2= metric_df['value'].max()
-param3= metric_df['value'].min()
-param4= metric_df['value'].mean()
-param4= metric_df['value'].std()
+
+#for metric in metrics_to_evaluate:
+#    metric_data = prom.get_metric_range_data(
+#        metric_name=metric,
+#        label_config=label_config,
+#        start_time=start_time,
+#        end_time=end_time,
+#        chunk_size=chunk_size,
+#    )
+#    metric_object_list = MetricsList(metric_data) #metric_object_list will be initialized as
+#                                                  #a list of Metric objects for all the
+#                                                  #metrics downloaded using get_metric query
+#     #    my_metric_object = metric_object_list[0] # one of the metrics from the list
+#    #print(my_metric_object)
+#
+#    fields = ['Date', 'Time', 'CPULoad'] 
+#  
+#    for item in metric_object_list:
+#        print(item)
+#
+#    metric_object_list.to_csv('./export_dataframe.csv')
+#
+#----------------------------------------SECOND---------------------------------------------#
+#---------calcoli il valore di max, min, avg, dev_std della metriche per 1h,3h, 12h---------#
+
+#for item in metric_data:
+#    #metric_df = MetricRangeDataFrame(metric_data)
+#    metric_df = MetricRangeDataFrame(item)
+#    print(metric_df.head())
+#    param1= "cpuLoad"
+#    param2= metric_df['value'].max()
+#    param3= metric_df['value'].min()
+#    param4= metric_df['value'].mean()
+#    param4= metric_df['value'].std()
 
 
 #########################################################################
