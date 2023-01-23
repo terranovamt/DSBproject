@@ -1,6 +1,6 @@
 from prometheus_api_client import PrometheusConnect, MetricsList, MetricSnapshotDataFrame, MetricRangeDataFrame
 from prometheus_api_client.utils import parse_datetime
-#from confluent_kafka import Producer
+from confluent_kafka import Producer
 #from flask import Flask, jsonify, request
 from datetime import timedelta
 from statsmodels.tsa.stattools import acf, adfuller, kpss
@@ -13,7 +13,9 @@ import csv
 #import openpyxl
 import pandas as pd
 
-
+broker = "kafka:9092"
+topic = "promethuesdata"
+conf = {'bootstrap.servers': broker}
 def delivery_callback(err, msg):
     if err:
         sys.stderr.write('%% Message failed delivery: %s\n' % err)
@@ -40,13 +42,24 @@ print('#------------Connection succed !------------#\n')
 #--------------------------------------------FIRST-----------------------------------------------------#
 #----------------------------------------PROMETHEUS' QUERY---------------------------------------------#
 time_to_evaluate = ['1h', '3h', '12h']
-metrics_to_evaluate = ['cpuLoad', 'cpuTemp', 'diskUsage', 'availableMem', 'networkThroughput']
+metrics_to_evaluate = ['cpuLoad'] #, 'cpuTemp', 'diskUsage', 'availableMem', 'networkThroughput'
 end_time = parse_datetime("now")
 chunk_size = timedelta(minutes=10)
-label_config = {'job': 'summary'} 
+label_config = {'nodeName': 'sv122','job': 'summary'} 
 counter = 0
-for time in time_to_evaluate:       
-    start_time = parse_datetime(time)
+minValues_list = []
+maxValues_list = []
+meanValues_list = []
+stdValues_list = []
+kafka_message = []
+Oneh_monitor = []
+Twoh_monitor = []
+Threeh_monitor = []
+p = Producer(**conf)
+
+for timing in time_to_evaluate:       
+    start_time = parse_datetime(timing)  
+    t0_metrics = time.time() 
     for metric in metrics_to_evaluate:
         metric_data = prom.get_metric_range_data(
             metric_name=metric,
@@ -58,13 +71,6 @@ for time in time_to_evaluate:
         metric_df = MetricRangeDataFrame(metric_data) # Creazione del data frame
         #print('METRIC_DF -> ', metric_df)
         #metric_object_list = MetricsList(metric_data)
-        minValues_list = []
-        maxValues_list = []
-        meanValues_list = []
-        stdValues_list = []
-        Oneh_monitor = []
-        Twoh_monitor = []
-        Threeh_monitor = []
         #--------------------------Evaluation of MAX, min, mean and std_dev----------------------------#
         print("Evaluation of MAX, min, mean and std_dev is on going \n")
         print('                       ..........                    \n')
@@ -73,6 +79,7 @@ for time in time_to_evaluate:
         min_value = round(metric_df['value'].min(), 2)
         mean_value = round(metric_df['value'].mean(), 2)
         std_value = round(metric_df['value'].std(), 2)
+        t1_metrics = time.time()
         print("\n               Monitoring done!            \n")
         print("---------------->MAX value: ", max_value)
         print("---------------->min value: ", min_value)
@@ -83,24 +90,39 @@ for time in time_to_evaluate:
         maxValues_list.append(max_value) 
         meanValues_list.append(mean_value)
         stdValues_list.append(std_value) 
-        
+        #-----------------------------------Packing message for Kafka (1/4)-----------------------------#
+        kafka_message.append(minValues_list)
+        kafka_message.append(maxValues_list)
+        kafka_message.append(meanValues_list)
+        kafka_message.append(minValues_list)
+        #-----------------------------------------------------------------------------------------------#
         #-----------------Evaluation of AutoCorrelation, Stationarity & Seasonability-------------------#
+        t0_evaluation = time.time()
         print("Evaluation of AutoCorrelation is on going ...\n")
         autocorrelation = acf(metric_df['value']) 
         autocorrelation_list = autocorrelation.tolist()
         del autocorrelation_list[0]
-        for autocorrelation_i in autocorrelation_list:
-            print('AUTOCORRELATION ----> ', autocorrelation_i)
+        #-----------------------------------Packing message for Kafka (2/4)-----------------------------#
+        kafka_message.append(autocorrelation_list)
+        #-----------------------------------------------------------------------------------------------#
+       # for autocorrelation_i in autocorrelation_list:
+        #    print('AUTOCORRELATION ----> ', autocorrelation_i)
 
         print("Evaluation of Stationariety is on going ...   \n")
         stationarity = adfuller(metric_df['value'],autolag='AIC') 
-        print('STATIONARITY ----> ', stationarity)
-
+       # print('STATIONARITY ----> ', stationarity)
+        #-----------------------------------Packing message for Kafka (3/4)-----------------------------#
+        kafka_message.append(stationarity)
+        #-----------------------------------------------------------------------------------------------#
         print("Evaluation of Seasonability is on going ...   \n")
         seasonability = seasonal_decompose(metric_df['value'], model='additive', period=10)
         seasonability_list = seasonability.seasonal.tolist() 
-        for seasonability_i in seasonability_list:
-            print('SEASONABILITY ----> ', seasonability_i)
+        #-----------------------------------Packing message for Kafka (4/4)-----------------------------#
+        kafka_message.append(seasonability_list)
+        #-----------------------------------------------------------------------------------------------#
+        t1_evaluation = time.time()
+       # for seasonability_i in seasonability_list:
+       #     print('SEASONABILITY ----> ', seasonability_i)
 
         #-------------------------------Prediction of each metric--------------------------------------#
         #---------->RESAMPLING
@@ -108,6 +130,7 @@ for time in time_to_evaluate:
         print('                     ..........              \n')
         print('                     ..........              \n')
         print("RESAMPLING is on going ...                   \n")
+        t0_prediction = time.time()
         MAX_resampling = metric_df['value'].resample(rule='2T').max()
         print(" MAX RESAMPLING ---> \n", MAX_resampling)
         min_resampling = metric_df['value'].resample(rule='2T').min()
@@ -129,86 +152,120 @@ for time in time_to_evaluate:
         print("Prediction of min ---> \n", prediction_min)  
         prediction_mean = tsmodel_mean.forecast(5)        
         print("Prediction of mean ---> \n", prediction_mean) 
+        t1_prediction = time.time()  
 
-        monitoring_values = {
+        monitoring_metrics = {
             "Metrics":{
                 "Metric Name": metric,
-                "Timing": time
-            } 
+                "Timing": timing,
+                "Computation Time [s]" : round((t1_metrics - t0_metrics), 2)
+                            
+            }
         }
-        if (time == '1h'):
-            Oneh_monitor.append(monitoring_values)
-        if (time == '2h'):
-            Twoh_monitor.append(monitoring_values)
-        if (time == '3h'):
-            Threeh_monitor.append(monitoring_values)
 
+        monitoring_evaluation = {
+            "Evalution_Values":{
+                "Metric Name": metric,
+                "Timing": timing,
+                "Computation Time [s]" : round((t1_evaluation - t0_evaluation), 2)
+                    
+            }
+        }
+
+        monitoring_prediction = {
+            "Prediction_values":{
+                "Metric Name": metric,
+                "Timing": timing,
+                "Computation Time [s]" : round((t1_prediction - t0_prediction), 2)
+            
+            }
+        }
+        with open('Performance.log', 'a') as f:
+            f.write(str(monitoring_metrics)) 
+            f.write('\n')
+            f.write(str(monitoring_evaluation))
+            f.write('\n')
+            f.write(str(monitoring_prediction))   
+            f.write('\n')    
+                
         counter += 1
-
+        print("COUTER ---> \n", counter) 
+        try:
+            print("Sending message to Kafka is on going ...\n")
+            print('                     ..........              \n')
+            print('                     ..........              \n')
+            #record_key = metric # nome metrica
+            msg = json.dumps(kafka_message) 
+            p.produce(topic, key=metric, value=msg, callback=delivery_callback)
+            print("Message sent!\n")
+        except KafkaError:
+            print('%% Local producer queue is full (%d messages awaiting delivery): try again\n' % len(p))
+            p.poll(0)
 with open('output.txt', 'a') as f:
     for item in minValues_list:
-        f.write('minValues_list')
-        f.write(item)
+        f.write('minValues_list\n')
+        f.write(str(item))
         f.write('\n')
         #print('minValues_list: \n', item)
 
     for item in maxValues_list:
-        f.write('maxValues_list')
-        f.write(item)
+        f.write('maxValues_list\n')
+        f.write(str(item))
         f.write('\n')
         #print('maxValues_list: \n', item)
 
     for item in meanValues_list:
-        f.write('meanValues_list')
-        f.write(item)
+        f.write('meanValues_list\n')
+        f.write(str(item))
         f.write('\n')
         #print('meanValues_list: \n', item)
 
     for item in stdValues_list:
-        f.write('stdValues_list')
-        f.write(item)
+        f.write('stdValues_list\n')
+        f.write(str(item))
         f.write('\n')
         #print('stdValues_list: \n', item)
 
     for autocorrelation_i in autocorrelation_list:
-        f.write('stdValues_list')
-        f.write(autocorrelation_i)
+        f.write('autocorrelation_i\n')
+        f.write(str(autocorrelation_i))
         f.write('\n')
         #print('AUTOCORRELATION ----> ', autocorrelation_i)
 
     f.write('STATIONARITY')
-    f.write(stationarity)
+    f.write(str(stationarity))
+    f.write('\n')
     print('STATIONARITY ----> ', stationarity)
 
+    f.write('seasonability_i')
     for seasonability_i in seasonability_list:
-        f.write('seasonability_i')
-        f.write(seasonability_i)
-        f.write('\n')
-        #print('SEASONABILITY ----> ', seasonability_i)
-
+        f.write(str(seasonability_i))
+        #f.write('\n')
+    
+    print('ciao oooooo ----> ')
+   
     for item in Oneh_monitor:
-        f.write('Oneh_monitor')
-        f.write(item)
+        f.write('Oneh_monitor\n')
+        print('ciao oooooo2 ----> ')
+   
+        f.write(str(item))
         f.write('\n')
         #print('1h Monitoring: \n', item)
 
     for item in Twoh_monitor:
-        f.write('Twoh_monitor')
-        f.write(item)
+        f.write('Twoh_monitor\n')
+        f.write(str(item))
         f.write('\n')
         #print('2h Monitoring: \n', item)
 
     for item in Threeh_monitor:
-        f.write('Threeh_monitor')
-        f.write(item)
+        f.write('Threeh_monitor\n')
+        f.write(str(item))
         f.write('\n')
         #print('3h Monitoring: \n', item) 
 
 print('Counter = ', counter)
 ########################################################################################################
-
-
-
 
 #for metric in metrics_to_evaluate:
 #    metric_data = prom.get_metric_range_data(
