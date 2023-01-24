@@ -1,7 +1,7 @@
 from prometheus_api_client import PrometheusConnect, MetricsList, MetricSnapshotDataFrame, MetricRangeDataFrame
 from prometheus_api_client.utils import parse_datetime
 from confluent_kafka import Producer
-#from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request
 from datetime import timedelta
 from statsmodels.tsa.stattools import acf, adfuller, kpss
 from statsmodels.graphics.tsaplots import plot_acf
@@ -55,6 +55,7 @@ kafka_message = []
 Oneh_monitor = []
 Twoh_monitor = []
 Threeh_monitor = []
+performance_list = []
 p = Producer(**conf)
 
 for timing in time_to_evaluate:       
@@ -180,6 +181,12 @@ for timing in time_to_evaluate:
             
             }
         }
+        performance_list.append(monitoring_metrics)
+        performance_list.append(monitoring_evaluation)
+        performance_list.append(monitoring_prediction)
+        #for perf in performance_list:
+        #    print('monitoring_metrics', perf)
+#
         with open('Performance.log', 'a') as f:
             f.write(str(monitoring_metrics)) 
             f.write('\n')
@@ -199,70 +206,87 @@ for timing in time_to_evaluate:
             p.produce(topic, key=metric, value=msg, callback=delivery_callback)
             print("Message sent!\n")
         except KafkaError:
-            print('%% Local producer queue is full (%d messages awaiting delivery): try again\n' % len(p))
-            p.poll(0)
-with open('output.txt', 'a') as f:
-    for item in minValues_list:
-        f.write('minValues_list\n')
-        f.write(str(item))
-        f.write('\n')
-        #print('minValues_list: \n', item)
+           print('%% Local producer queue is full (%d messages awaiting delivery): try again\n' % len(p))
+           p.poll(0)
 
-    for item in maxValues_list:
-        f.write('maxValues_list\n')
-        f.write(str(item))
-        f.write('\n')
-        #print('maxValues_list: \n', item)
+app = Flask(__name__)
+@app.route('/')
+def get_incomes_0():
+    return ("ETL PIPELINE HOME\n-> go to ` /all ` to print kafka message\n-> go to ` /performance ` to print performance report")
 
-    for item in meanValues_list:
-        f.write('meanValues_list\n')
-        f.write(str(item))
-        f.write('\n')
-        #print('meanValues_list: \n', item)
+@app.route('/all')
+def get_incomes_1():
+    return jsonify(kafka_message)
 
-    for item in stdValues_list:
-        f.write('stdValues_list\n')
-        f.write(str(item))
-        f.write('\n')
-        #print('stdValues_list: \n', item)
+@app.route('/performance')
+def get_incomes_2():
+    return (performance_list)
 
-    for autocorrelation_i in autocorrelation_list:
-        f.write('autocorrelation_i\n')
-        f.write(str(autocorrelation_i))
-        f.write('\n')
-        #print('AUTOCORRELATION ----> ', autocorrelation_i)
-
-    f.write('STATIONARITY')
-    f.write(str(stationarity))
-    f.write('\n')
-    print('STATIONARITY ----> ', stationarity)
-
-    f.write('seasonability_i')
-    for seasonability_i in seasonability_list:
-        f.write(str(seasonability_i))
-        #f.write('\n')
-    
-    print('ciao oooooo ----> ')
+if __name__ == '__main__':
+    app.run(debug = False, host='0.0.0.0', port=5000)
    
-    for item in Oneh_monitor:
-        f.write('Oneh_monitor\n')
-        print('ciao oooooo2 ----> ')
-   
-        f.write(str(item))
-        f.write('\n')
-        #print('1h Monitoring: \n', item)
-
-    for item in Twoh_monitor:
-        f.write('Twoh_monitor\n')
-        f.write(str(item))
-        f.write('\n')
-        #print('2h Monitoring: \n', item)
-
-    for item in Threeh_monitor:
-        f.write('Threeh_monitor\n')
-        f.write(str(item))
-        f.write('\n')
-        #print('3h Monitoring: \n', item) 
+#with open('output.txt', 'a') as f:
+#    for item in minValues_list:
+#        f.write('minValues_list\n')
+#        f.write(str(item))
+#        f.write('\n')
+#        #print('minValues_list: \n', item)
+#
+#    for item in maxValues_list:
+#        f.write('maxValues_list\n')
+#        f.write(str(item))
+#        f.write('\n')
+#        #print('maxValues_list: \n', item)
+#
+#    for item in meanValues_list:
+#        f.write('meanValues_list\n')
+#        f.write(str(item))
+#        f.write('\n')
+#        #print('meanValues_list: \n', item)
+#
+#    for item in stdValues_list:
+#        f.write('stdValues_list\n')
+#        f.write(str(item))
+#        f.write('\n')
+#        #print('stdValues_list: \n', item)
+#
+#    for autocorrelation_i in autocorrelation_list:
+#        f.write('autocorrelation_i\n')
+#        f.write(str(autocorrelation_i))
+#        f.write('\n')
+#        #print('AUTOCORRELATION ----> ', autocorrelation_i)
+#
+#    f.write('STATIONARITY')
+#    f.write(str(stationarity))
+#    f.write('\n')
+#    print('STATIONARITY ----> ', stationarity)
+#
+#    f.write('seasonability_i')
+#    for seasonability_i in seasonability_list:
+#        f.write(str(seasonability_i))
+#        #f.write('\n')
+#    
+#    print('ciao oooooo ----> ')
+#   
+#    for item in Oneh_monitor:
+#        f.write('Oneh_monitor\n')
+#        print('ciao oooooo2 ----> ')
+#   
+#        f.write(str(item))
+#        f.write('\n')
+#        #print('1h Monitoring: \n', item)
+#
+#    for item in Twoh_monitor:
+#        f.write('Twoh_monitor\n')
+#        f.write(str(item))
+#        f.write('\n')
+#        #print('2h Monitoring: \n', item)
+#
+#    for item in Threeh_monitor:
+#        f.write('Threeh_monitor\n')
+#        f.write(str(item))
+#        f.write('\n')
+#        #print('3h Monitoring: \n', item) 
 
 print('Counter = ', counter)
 ########################################################################################################
