@@ -16,11 +16,11 @@ c = Consumer({
 c.subscribe(['promethuesdata'])
 
 while True:
-    print('#------------Pollin kafka ------------#\n')
+    print('#------------Pollin kafka ------------#')
     msg = c.poll(0)
-
+    print(msg)
     if msg is None:
-        print("msg is none");
+        print("msg is none")
         continue
     if msg.error():
         print("Consumer error: {}".format(msg.error()))
@@ -75,84 +75,6 @@ c.close()
 #         print(err)
 
 
-
-
-
-
-# # MAX, MIN, AVG, DEV_STD
-# def clientSQL_Metric(metric, max, min, mean, dev_std, duration):
-#         sql = """INSERT INTO metrics (metric, max, min, mean, dev_std, duration) VALUES (%s,%s,%s,%s,%s,%s);"""
-#         val = (metric, max, min, mean, dev_std, duration)
-#         mtdb.execute(sql, val)
-#         db.commit()
-
-# #AUTOCORRELAZIONE
-# def clientSQL_Autocorrelation(metric, list_autocorrelation, duration): # Query di inserimento dati su tabella autocorrelation
-#     for item in list_autocorrelation:
-#         sql = """INSERT INTO autocorrelation (metric, value, duration) VALUES (%s,%s,%s);"""
-#         val = (metric, round(item, 4), duration)
-#         mtdb.execute(sql, val)
-#         db.commit()
-
-# #STAGIONALITA
-# def clientSQL_Seasonability(metric, list_seasonal, duration): # Query di inserimento dati su tabella seasonability
-#     for item in list_seasonal:
-#         sql = """INSERT INTO seasonability (metric, value, duration) VALUES (%s,%s,%s);"""
-#         val = (metric, round(item, 4), duration)
-#         mtdb.execute(sql, val)
-#         db.commit()
-
-# #STAZIONARIETA
-# def clientSQL_Stationarity(metric, stationarity, duration): # Query di inserimento dati su tabella stationarity
-#     sql = """INSERT INTO stationarity (metric, p_value,critical_values ,duration) VALUES (%s,%s,%s,%s);"""
-#     val = (metric, str(stationarity[1]), str(stationarity[4]),duration)
-#     mtdb.execute(sql, val)
-#     db.commit()
-
-# # PREDIZIONE SU MASSIMO
-# def clientSQL_Prediction_Max(metric, list_max, timing): # Query di inserimento dati su tabella prediction_max
-#     j = 0
-#     for i in list_max:
-#         if j % 2 == 0:
-#             p = j + 1
-#             sql = """INSERT INTO prediction_max (metric, timestamp, value, duration) VALUES (%s,%s,%s,%s);"""
-#             val = (metric, i, list_max[p], timing)
-#             mtdb.execute(sql, val)
-#             db.commit()
-#             j += 1
-#         else:
-#             j += 1
-#             continue
-
-# # PREDIZIONE SU MEDIA
-# def clientSQL_Prediction_Mean(metric, list_mean, timing): # Query di inserimento dati su tabella prediction_mean
-#     j = 0
-#     for i in list_mean:
-#         if j % 2 == 0:
-#             p = j + 1
-#             sql = """INSERT INTO prediction_mean (metric, timestamp, value, duration) VALUES (%s,%s,%s,%s);"""
-#             val = (metric, i, list_mean[p], timing)
-#             mtdb.execute(sql, val)
-#             db.commit()
-#             j += 1
-#         else:
-#             j += 1
-#             continue
-
-# # PREDIZIONE SU MINIMO
-# def clientSQL_Prediction_Min(metric, list_min, timing): # Query di inserimento dati su tabella prediction_min
-#     j = 0
-#     for i in list_min:
-#         if j % 2 == 0:
-#             p = j + 1
-#             sql = """INSERT INTO prediction_min (metric, timestamp, value, duration) VALUES (%s,%s,%s,%s);"""
-#             val = (metric, i, list_min[p], timing)
-#             mtdb.execute(sql, val)
-#             db.commit()
-#             j += 1
-#         else:
-#             j += 1
-#             continue           
 
 
 

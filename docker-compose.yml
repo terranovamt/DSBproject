@@ -9,11 +9,11 @@ services:
     ports:
       - "5000:5000"
 
-  # data_storage:
-  #   build:
-  #     context: . # path relativo da docker-compose a Dockerfile
-  #     dockerfile: datastorage.Dockerfilecd\\
-  #   restart: always
+  data_storage:
+    build:
+      context: . # path relativo da docker-compose a Dockerfile
+      dockerfile: datastorage.Dockerfile
+    restart: always
 
   # data_retrieval:
   #   build:

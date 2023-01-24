@@ -74,19 +74,19 @@ for timing in time_to_evaluate:
         #metric_object_list = MetricsList(metric_data)
         #--------------------------Evaluation of MAX, min, mean and std_dev----------------------------#
         print("Evaluation of MAX, min, mean and std_dev is on going \n")
-        print('                       ..........                    \n')
-        print('                       ..........                    \n')
+        #print('                       ..........                    \n')
+        #print('                       ..........                    \n')
         max_value = round(metric_df['value'].max(), 2)
         min_value = round(metric_df['value'].min(), 2)
         mean_value = round(metric_df['value'].mean(), 2)
         std_value = round(metric_df['value'].std(), 2)
         t1_metrics = time.time()
-        print("\n               Monitoring done!            \n")
-        print("---------------->MAX value: ", max_value)
-        print("---------------->min value: ", min_value)
-        print("---------------->MEAN value: ", mean_value)
-        print("---------------->STD_dev value: ", std_value)
-        print('                                           \n\n')
+        #print("\n               Monitoring done!            \n")
+        #print("---------------->MAX value: ", max_value)
+        #print("---------------->min value: ", min_value)
+        #print("---------------->MEAN value: ", mean_value)
+        #print("---------------->STD_dev value: ", std_value)
+        #print('                                           \n\n')
         minValues_list.append(min_value) 
         maxValues_list.append(max_value) 
         meanValues_list.append(mean_value)
@@ -128,31 +128,31 @@ for timing in time_to_evaluate:
         #-------------------------------Prediction of each metric--------------------------------------#
         #---------->RESAMPLING
         print("Prediction process is started now            \n")
-        print('                     ..........              \n')
-        print('                     ..........              \n')
-        print("RESAMPLING is on going ...                   \n")
+        #print('                     ..........              \n')
+        #print('                     ..........              \n')
+        #print("RESAMPLING is on going ...                   \n")
         t0_prediction = time.time()
         MAX_resampling = metric_df['value'].resample(rule='2T').max()
-        print(" MAX RESAMPLING ---> \n", MAX_resampling)
+        #print(" MAX RESAMPLING ---> \n", MAX_resampling)
         min_resampling = metric_df['value'].resample(rule='2T').min()
-        print(" MIN RESAMPLING ---> \n", min_resampling)
+        #print(" MIN RESAMPLING ---> \n", min_resampling)
         mean_resampling = metric_df['value'].resample(rule='2T').mean()   
-        print(" MEAN RESAMPLING ---> \n", mean_resampling) 
+        #print(" MEAN RESAMPLING ---> \n", mean_resampling) 
         
         #---------->PREDICTION
-        print('                     ..........              \n')
-        print('                     ..........              \n')
-        print("PREDICTION is on going ...                   \n")
+        #print('                     ..........              \n')
+        #print('                     ..........              \n')
+        #print("PREDICTION is on going ...                   \n")
         tsmodel_MAX = ExponentialSmoothing(MAX_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
         tsmodel_min = ExponentialSmoothing(min_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
         tsmodel_mean = ExponentialSmoothing(mean_resampling, trend='add', seasonal='add',seasonal_periods=5).fit() 
         
         prediction_max = tsmodel_MAX.forecast(5) 
-        print("Prediction of MAX ---> \n", prediction_max)
+        #print("Prediction of MAX ---> \n", prediction_max)
         prediction_min = tsmodel_min.forecast(5)  
-        print("Prediction of min ---> \n", prediction_min)  
+        #print("Prediction of min ---> \n", prediction_min)  
         prediction_mean = tsmodel_mean.forecast(5)        
-        print("Prediction of mean ---> \n", prediction_mean) 
+        #print("Prediction of mean ---> \n", prediction_mean) 
         t1_prediction = time.time()  
 
         monitoring_metrics = {
@@ -196,11 +196,11 @@ for timing in time_to_evaluate:
             f.write('\n')    
                 
         counter += 1
-        print("COUTER ---> \n", counter) 
+        print("COUTER ---> ", counter) 
         try:
             print("Sending message to Kafka is on going ...\n")
-            print('                     ..........              \n')
-            print('                     ..........              \n')
+            #print('                     ..........              \n')
+            #print('                     ..........              \n')
             #record_key = metric # nome metrica
             msg = json.dumps(kafka_message) 
             p.produce(topic, key=metric, value=msg, callback=delivery_callback)
@@ -208,6 +208,13 @@ for timing in time_to_evaluate:
         except KafkaError:
            print('%% Local producer queue is full (%d messages awaiting delivery): try again\n' % len(p))
            p.poll(0)
+
+
+def delivery_callback(err, msg):
+    if err:
+        print('%% Message failed delivery: %s\n' % err)
+    else:
+        print('%% Message delivered to %s [%d] @ %d\n' % (msg.topic(), msg.partition(), msg.offset()))
 
 app = Flask(__name__)
 @app.route('/')
