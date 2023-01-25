@@ -1,26 +1,60 @@
 from confluent_kafka import Consumer
 import json
-#import mysql.connector
-#from mysql.connector import errorcode
+import mysql.connector
+from mysql.connector import errorcode
 
 print('#DATA storage#\n')
 
 ###################
 c = Consumer({
-    'bootstrap.servers': 'localhost:29092',
+    'bootstrap.servers': 'kafka:9092',
     'group.id': 'mygroup',
-    'auto.offset.reset': 'earliest'
+    'auto.offset.reset': 'latest'
 })
 
  # Subscription sul topic
 c.subscribe(['promethuesdata'])
 
+
+###############################################
+# DATABASE
+###############################################
+try:
+    print('#--------------------Connecting DB-------------#')
+    db = mysql.connector.connect(
+        host="mysqldb",
+        user="root",
+        password="root",
+        database="test_DSB",
+        port=3306
+    )
+    mtdb = db.cursor()
+    print('#------------Connection to DB succed !------------#')
+    #Clean all DB
+    mtdb.execute("DELETE FROM metrics")
+    mtdb.execute("DELETE FROM autocorrelation")
+    mtdb.execute("DELETE FROM seasonability")
+    mtdb.execute("DELETE FROM stationarity")
+    mtdb.execute("DELETE FROM pred_max")
+    mtdb.execute("DELETE FROM pred_min")
+    mtdb.execute("DELETE FROM pred_mean")
+
+    print('#------------Clean complete !------------#\n')
+except mysql.connector.Error as err:
+    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+        print("ACCESS_DENIED_ERROR")
+    elif err.errno == errorcode.ER_BAD_DB_ERROR:
+        print("BAD_DB")
+    else:
+        print(err)
+
+
 while True:
-    print('#------------Pollin kafka ------------#')
-    msg = c.poll(0)
-    print(msg)
+    
+    msg = c.poll(1.0)
+    #print(msg)
     if msg is None:
-        print("msg is none")
+        #print("msg is none")
         continue
     if msg.error():
         print("Consumer error: {}".format(msg.error()))
@@ -28,51 +62,15 @@ while True:
 
     print('Received message: {}'.format(msg.value().decode('utf-8')))
 
-
-    msg_key = msg.key() 
-    msg_value = msg.value()
-    data = json.loads(msg_value) 
+    key = msg.key() 
+    msg = msg.value()
+    print("\n\nCIAOO\n\n")
+    data = json.loads(msg) 
     print(data)
-        #--------------------------
-    max = data['Metric']['max']
-    min = data['Metric']['min']
-    mean = data['Metric']['mean']
-    std = data['Metric']['std']
 
 c.close()
 ####################
 
-# try:
-#     print('#--------------------Connecting-------------#\n')
-#     print('                     ..........              \n')
-#     print('                     ..........              \n')
-#     print('                     ..........              \n')
-#     db = mysql.connector.connect(
-#         host="mysqldb",
-#         user="root",
-#         password="root",
-#         database="DSBDmarchiterranova",
-#         port=3306
-#     )
-#     mtdb = db.cursor()
-#     print('#------------Connection to DB succed !------------#\n')
-#     #Clean all DB
-#     mtdb.execute("DELETE FROM metrics")
-#     mtdb.execute("DELETE FROM autocorrelation")
-#     mtdb.execute("DELETE FROM seasonability")
-#     mtdb.execute("DELETE FROM stationarity")
-#     mtdb.execute("DELETE FROM pred_max")
-#     mtdb.execute("DELETE FROM pred_min")
-#     mtdb.execute("DELETE FROM pred_mean")
-
-#     print('#------------Clean complete !------------#\n')
-# except mysql.connector.Error as err:
-#     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-#         print("ACCESS_DENIED_ERROR")
-#     elif err.errno == errorcode.ER_BAD_DB_ERROR:
-#         print("BAD_DB")
-#     else:
-#         print(err)
 
 
 

@@ -18,8 +18,10 @@ topic = "promethuesdata"
 conf = {'bootstrap.servers': broker}
 def delivery_callback(err, msg):
     if err:
+        print('%% Message failed delivery: %s\n' % err)
         sys.stderr.write('%% Message failed delivery: %s\n' % err)
     else:
+        print('%% Message delivered to %s [%d] @ %d\n' % (msg.topic(), msg.partition(), msg.offset()))
         sys.stderr.write('%% Message delivered to %s partition [%d] @ %d\n' %
                          (msg.topic(), msg.partition(), msg.offset()))
 
@@ -42,7 +44,7 @@ print('#------------Connection succed !------------#\n')
 #--------------------------------------------FIRST-----------------------------------------------------#
 #----------------------------------------PROMETHEUS' QUERY---------------------------------------------#
 time_to_evaluate = ['1h', '3h', '12h']
-metrics_to_evaluate = ['cpuLoad'] #, 'cpuTemp', 'diskUsage', 'availableMem', 'networkThroughput'
+metrics_to_evaluate = ['cpuLoad', 'cpuTemp', 'diskUsage', 'availableMem', 'networkThroughput'] #
 end_time = parse_datetime("now")
 chunk_size = timedelta(minutes=10)
 label_config = {'nodeName': 'sv122','job': 'summary'} 
@@ -73,7 +75,7 @@ for timing in time_to_evaluate:
         #print('METRIC_DF -> ', metric_df)
         #metric_object_list = MetricsList(metric_data)
         #--------------------------Evaluation of MAX, min, mean and std_dev----------------------------#
-        print("Evaluation of MAX, min, mean and std_dev is on going \n")
+        print("Evaluation of MAX, min, mean and std_dev is on going")
         #print('                       ..........                    \n')
         #print('                       ..........                    \n')
         max_value = round(metric_df['value'].max(), 2)
@@ -99,7 +101,7 @@ for timing in time_to_evaluate:
         #-----------------------------------------------------------------------------------------------#
         #-----------------Evaluation of AutoCorrelation, Stationarity & Seasonability-------------------#
         t0_evaluation = time.time()
-        print("Evaluation of AutoCorrelation is on going ...\n")
+        print("Evaluation of AutoCorrelation is on going ...")
         autocorrelation = acf(metric_df['value']) 
         autocorrelation_list = autocorrelation.tolist()
         del autocorrelation_list[0]
@@ -109,13 +111,13 @@ for timing in time_to_evaluate:
        # for autocorrelation_i in autocorrelation_list:
         #    print('AUTOCORRELATION ----> ', autocorrelation_i)
 
-        print("Evaluation of Stationariety is on going ...   \n")
+        print("Evaluation of Stationariety is on going ...   ")
         stationarity = adfuller(metric_df['value'],autolag='AIC') 
        # print('STATIONARITY ----> ', stationarity)
         #-----------------------------------Packing message for Kafka (3/4)-----------------------------#
         kafka_message.append(stationarity)
         #-----------------------------------------------------------------------------------------------#
-        print("Evaluation of Seasonability is on going ...   \n")
+        print("Evaluation of Seasonability is on going ...   ")
         seasonability = seasonal_decompose(metric_df['value'], model='additive', period=10)
         seasonability_list = seasonability.seasonal.tolist() 
         #-----------------------------------Packing message for Kafka (4/4)-----------------------------#
@@ -127,7 +129,7 @@ for timing in time_to_evaluate:
 
         #-------------------------------Prediction of each metric--------------------------------------#
         #---------->RESAMPLING
-        print("Prediction process is started now            \n")
+        #print("Prediction process is started now            \n")
         #print('                     ..........              \n')
         #print('                     ..........              \n')
         #print("RESAMPLING is on going ...                   \n")
@@ -142,7 +144,7 @@ for timing in time_to_evaluate:
         #---------->PREDICTION
         #print('                     ..........              \n')
         #print('                     ..........              \n')
-        #print("PREDICTION is on going ...                   \n")
+        print("PREDICTION is on going ...                   ")
         tsmodel_MAX = ExponentialSmoothing(MAX_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
         tsmodel_min = ExponentialSmoothing(min_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
         tsmodel_mean = ExponentialSmoothing(mean_resampling, trend='add', seasonal='add',seasonal_periods=5).fit() 
@@ -196,25 +198,20 @@ for timing in time_to_evaluate:
             f.write('\n')    
                 
         counter += 1
-        print("COUTER ---> ", counter) 
+        print("\nCOUTER ---> ", counter) 
         try:
-            print("Sending message to Kafka is on going ...\n")
+            print("Sending message to Kafka is on going ...")
             #print('                     ..........              \n')
             #print('                     ..........              \n')
             #record_key = metric # nome metrica
             msg = json.dumps(kafka_message) 
             p.produce(topic, key=metric, value=msg, callback=delivery_callback)
+            print(p)
             print("Message sent!\n")
-        except KafkaError:
+        except BufferError:
            print('%% Local producer queue is full (%d messages awaiting delivery): try again\n' % len(p))
            p.poll(0)
-
-
-def delivery_callback(err, msg):
-    if err:
-        print('%% Message failed delivery: %s\n' % err)
-    else:
-        print('%% Message delivered to %s [%d] @ %d\n' % (msg.topic(), msg.partition(), msg.offset()))
+           
 
 app = Flask(__name__)
 @app.route('/')
