@@ -1,8 +1,8 @@
 FROM python:3.7
 
-ADD DataRetrieval.py /
+ADD dataretrieval.py /
 
 RUN pip install Flask\
     pip install mysql-connector-python
 
-CMD  ["python", "./DataRetrieval.py" ]
+CMD  ["python", "./dataretrieval.py" ]

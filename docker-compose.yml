@@ -15,13 +15,13 @@ services:
       dockerfile: datastorage.Dockerfile
     restart: always
 
-  # data_retrieval:
-  #   build:
-  #     context: . # path relativo da docker-compose a Dockerfile
-  #     dockerfile: dataretrieval.Dockerfile
-  #   restart: always
-  #   ports:
-  #     - "5005:5005"
+  data_retrieval:
+    build:
+      context: . # path relativo da docker-compose a Dockerfile
+      dockerfile: dataretrieval.Dockerfile
+    restart: always
+    ports:
+      - "5050:5050"
 
   # sla_manager:
   #   build:
