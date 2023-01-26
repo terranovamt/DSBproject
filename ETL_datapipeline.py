@@ -10,12 +10,15 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 import json
 import time
 import csv
+import sys
+
 #import openpyxl
 import pandas as pd
 
-broker = "kafka:9092"
+broker = "localhost:29092"
 topic = "promethuesdata"
 conf = {'bootstrap.servers': broker}
+p = Producer(**conf)
 def delivery_callback(err, msg):
     if err:
         print('%% Message failed delivery: %s\n' % err)
@@ -24,9 +27,6 @@ def delivery_callback(err, msg):
         print('%% Message delivered to %s [%d] @ %d\n' % (msg.topic(), msg.partition(), msg.offset()))
         sys.stderr.write('%% Message delivered to %s partition [%d] @ %d\n' %
                          (msg.topic(), msg.partition(), msg.offset()))
-
-configuration = {'bootstrap.servers' : 'broker_kafka:9092'}
-topic = "prometheusdata"
 
 #try:
 #    producer = Producer(**configuration)
@@ -43,27 +43,28 @@ print('#------------Connection succed !------------#\n')
 #print('#                     Now you can get on Prometheus all metrics you want ;)                     #\n')
 #--------------------------------------------FIRST-----------------------------------------------------#
 #----------------------------------------PROMETHEUS' QUERY---------------------------------------------#
-time_to_evaluate = ['1h', '3h', '12h']
+time_to_evaluate = ['3h', '1h']
 metrics_to_evaluate = ['cpuLoad', 'cpuTemp', 'diskUsage', 'availableMem', 'networkThroughput'] #
 end_time = parse_datetime("now")
 chunk_size = timedelta(minutes=10)
 label_config = {'nodeName': 'sv122','job': 'summary'} 
 counter = 0
-minValues_list = []
-maxValues_list = []
-meanValues_list = []
-stdValues_list = []
-kafka_message = []
-Oneh_monitor = []
-Twoh_monitor = []
-Threeh_monitor = []
-performance_list = []
-p = Producer(**conf)
 
-for timing in time_to_evaluate:       
-    start_time = parse_datetime(timing)  
-    t0_metrics = time.time() 
-    for metric in metrics_to_evaluate:
+
+
+for metric in metrics_to_evaluate: 
+   
+
+    for timing in time_to_evaluate:    
+        minValues_list = []
+        maxValues_list = []
+        meanValues_list = []
+        stdValues_list = []
+        performance_list = [] 
+        kafka_message = []
+
+        start_time = parse_datetime(timing)  
+        t0_metrics = time.time() 
         metric_data = prom.get_metric_range_data(
             metric_name=metric,
             label_config=label_config,
@@ -94,10 +95,10 @@ for timing in time_to_evaluate:
         meanValues_list.append(mean_value)
         stdValues_list.append(std_value) 
         #-----------------------------------Packing message for Kafka (1/4)-----------------------------#
-        kafka_message.append(minValues_list)
-        kafka_message.append(maxValues_list)
-        kafka_message.append(meanValues_list)
-        kafka_message.append(minValues_list)
+        #kafka_message.append(minValues_list)
+        #kafka_message.append(maxValues_list)
+        #kafka_message.append(meanValues_list)
+        #kafka_message.append(minValues_list)
         #-----------------------------------------------------------------------------------------------#
         #-----------------Evaluation of AutoCorrelation, Stationarity & Seasonability-------------------#
         t0_evaluation = time.time()
@@ -106,26 +107,26 @@ for timing in time_to_evaluate:
         autocorrelation_list = autocorrelation.tolist()
         del autocorrelation_list[0]
         #-----------------------------------Packing message for Kafka (2/4)-----------------------------#
-        kafka_message.append(autocorrelation_list)
+        #kafka_message.append(autocorrelation_list)
         #-----------------------------------------------------------------------------------------------#
-       # for autocorrelation_i in autocorrelation_list:
+        # for autocorrelation_i in autocorrelation_list:
         #    print('AUTOCORRELATION ----> ', autocorrelation_i)
 
         print("Evaluation of Stationariety is on going ...   ")
         stationarity = adfuller(metric_df['value'],autolag='AIC') 
        # print('STATIONARITY ----> ', stationarity)
         #-----------------------------------Packing message for Kafka (3/4)-----------------------------#
-        kafka_message.append(stationarity)
+        #kafka_message.append(stationarity)
         #-----------------------------------------------------------------------------------------------#
         print("Evaluation of Seasonability is on going ...   ")
         seasonability = seasonal_decompose(metric_df['value'], model='additive', period=10)
         seasonability_list = seasonability.seasonal.tolist() 
         #-----------------------------------Packing message for Kafka (4/4)-----------------------------#
-        kafka_message.append(seasonability_list)
+        #kafka_message.append(seasonability_list)
         #-----------------------------------------------------------------------------------------------#
         t1_evaluation = time.time()
-       # for seasonability_i in seasonability_list:
-       #     print('SEASONABILITY ----> ', seasonability_i)
+        # for seasonability_i in seasonability_list:
+        #     print('SEASONABILITY ----> ', seasonability_i)
 
         #-------------------------------Prediction of each metric--------------------------------------#
         #---------->RESAMPLING
@@ -156,7 +157,7 @@ for timing in time_to_evaluate:
         prediction_mean = tsmodel_mean.forecast(5)        
         #print("Prediction of mean ---> \n", prediction_mean) 
         t1_prediction = time.time()  
-
+        #---------------------------Saving metrics computation time on API/performance------------------------------#
         monitoring_metrics = {
             "Metrics":{
                 "Metric Name": metric,
@@ -186,9 +187,6 @@ for timing in time_to_evaluate:
         performance_list.append(monitoring_metrics)
         performance_list.append(monitoring_evaluation)
         performance_list.append(monitoring_prediction)
-        #for perf in performance_list:
-        #    print('monitoring_metrics', perf)
-#
         with open('Performance.log', 'a') as f:
             f.write(str(monitoring_metrics)) 
             f.write('\n')
@@ -199,24 +197,51 @@ for timing in time_to_evaluate:
                 
         counter += 1
         print("\nCOUTER ---> ", counter) 
+
+    #     #--------------------------------Creating JSON to pack kafka message-------------------------#
+       
+
+        msg = {
+                "Metric": metric,
+                "MAX_value":max_value,
+                "min_value": min_value,
+                "mean_value": mean_value,
+                "std_value": std_value,                
+                "Autocorrelation": json.dumps(autocorrelation_list),
+                "Stationarity": json.dumps(stationarity),
+                "Seasonability": json.dumps(seasonability_list)
+                } #,
+                # "Prediction" : {
+                #     "Prediction_MAX": prediction_max,
+                #     "Prediction_min": prediction_min,
+                #     "Prediction_Mean": prediction_mean
+                # }                
+
+        #print('msg_kafka: \n', msg)
+
+        #for key, value in msg.items(): # append su lista per problemi al JSON
+        #    kafka_message.append(str(key))
+        #    kafka_message.append(str(value))
+    
+    #print(json.dumps(kafkamessage))
+    
         try:
-            print("Sending message to Kafka is on going ...")
-            #print('                     ..........              \n')
-            #print('                     ..........              \n')
-            #record_key = metric # nome metrica
-            msg = json.dumps(kafka_message) 
-            p.produce(topic, key=metric, value=msg, callback=delivery_callback)
+            print("Sending message to Kafka is on going ...\n")
+            p.produce(topic, key=timing, value=json.dumps(msg), callback=delivery_callback)
             print(p)
             print("Message sent!\n")
         except BufferError:
-           print('%% Local producer queue is full (%d messages awaiting delivery): try again\n' % len(p))
-           p.poll(0)
+            print('%% Local producer queue is full (%d messages awaiting delivery): try again\n' % len(p))
+            p.poll(0)
+           
+    #--------------------------------Creating JSON to pack kafka message-------------------------#
            
 
 app = Flask(__name__)
+
 @app.route('/')
 def get_incomes_0():
-    return ("ETL PIPELINE HOME\n-> go to ` /all ` to print kafka message\n-> go to ` /performance ` to print performance report")
+    return ('localhost:5000/all -> print msg  localhost:5000/performance -> print performance')
 
 @app.route('/all')
 def get_incomes_1():
@@ -292,7 +317,7 @@ if __name__ == '__main__':
 #        f.write('\n')
 #        #print('3h Monitoring: \n', item) 
 
-print('Counter = ', counter)
+#print('Counter = ', counter)
 ########################################################################################################
 
 #for metric in metrics_to_evaluate:

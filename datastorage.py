@@ -80,6 +80,14 @@ def SQL_INSERT_1H(metric, msg):
     #db.commit()
 
 
+    list_aut = json.loads(msg['Seasonability'])
+        for item in list_aut:    
+            sql = """INSERT INTO 1hAutocorrelation (metric,value) VALUES (%s,%s);"""
+            val = (metric,round(item, 4))        
+            #cursordb.execute(sql, val)
+            #db.commit()
+
+
 
     for i in n_prediction:
         pmax=prediction_max1h[i]
