@@ -8,7 +8,7 @@ print('#DATA storage#\n')
 n_statistics=4
 n_prediction=5
 
-###################
+#----------------------Consumer Configuration------------------------#
 c = Consumer({
      'bootstrap.servers': 'localhost:29092',
      'group.id': 'mygroup',
@@ -34,13 +34,21 @@ try:
     print('#------------Connection to DB succed !------------#\n')
     cursordb = db.cursor()
     #------------------------------DB Cleaning------------------------#
-    cursordb.execute("DELETE FROM metrics")
-    cursordb.execute("DELETE FROM autocorrelation")
-    cursordb.execute("DELETE FROM seasonability")
-    cursordb.execute("DELETE FROM stationarity")
-    cursordb.execute("DELETE FROM pred_max")
-    cursordb.execute("DELETE FROM pred_min")
-    cursordb.execute("DELETE FROM pred_mean")
+    cursordb.execute("DELETE FROM 1hMetrics")
+    cursordb.execute("DELETE FROM 1hAutocorrelation")
+    cursordb.execute("DELETE FROM 1hStationarity")
+    cursordb.execute("DELETE FROM 1hSeasonability")
+    cursordb.execute("DELETE FROM 1hPrediction")
+    cursordb.execute("DELETE FROM 3hMetrics")
+    cursordb.execute("DELETE FROM 3hAutocorrelation")
+    cursordb.execute("DELETE FROM 3hStationarity")
+    cursordb.execute("DELETE FROM 3hSeasonability")
+    cursordb.execute("DELETE FROM 3hPrediction")
+    cursordb.execute("DELETE FROM 12hMetrics")
+    cursordb.execute("DELETE FROM 12hAutocorrelation")
+    cursordb.execute("DELETE FROM 12hStationarity")
+    cursordb.execute("DELETE FROM 12hSeasonability")
+    cursordb.execute("DELETE FROM 12hPrediction")
 
     print('#------------Cleaning complete !------------#\n')
 except mysql.connector.Error as err:
@@ -50,7 +58,7 @@ except mysql.connector.Error as err:
         print("BAD_DB")
     else:
         print(err)
-
+#------------------------------SQL INSERT------------------------------#
 
 def SQL_INSERT_1H(metric, msg): 
     metric = msg['Metric'] 
@@ -58,47 +66,145 @@ def SQL_INSERT_1H(metric, msg):
     min= msg['min_value'] 
     mean= msg['mean_value'] 
     std = msg['std_value']
-    
-
-    
-    sql = """INSERT INTO 1hMetrics (metric,max, min,mean) VALUES (%s,%s,%s);"""
+     
+    sql = """INSERT INTO 1hMetrics (metric,max,min,mean,std) VALUES (%s,%s,%s,%s,%s);"""
     val = (metric,max,min,mean,std)
-    #cursordb.execute(sql, val)
-    #db.commit()
+    cursordb.execute(sql, val)
+    db.commit()
 
+    #-----------------------SQL INSERT Autocorrelation----------------------#
     list_aut = json.loads(msg['Autocorrelation'])
     for item in list_aut:    
         sql = """INSERT INTO 1hAutocorrelation (metric,value) VALUES (%s,%s);"""
         val = (metric,round(item, 4))        
-        #cursordb.execute(sql, val)
-        #db.commit()
-
-    list_stat = json.loads(msg['Stationarity'])    
-    sql = """INSERT INTO 1hStationarity (metric,value) VALUES (%s,%s);"""
-    val = (metric,round(list_stat[0], 4),round(list_stat[1], 4),round(list_stat[2], 4),round(list_stat[3], 4),str(list_stat[4]),round(list_stat[5], 4))        
-    #cursordb.execute(sql, val)
-    #db.commit()
-
-
-    list_aut = json.loads(msg['Seasonability'])
-        for item in list_aut:    
-            sql = """INSERT INTO 1hAutocorrelation (metric,value) VALUES (%s,%s);"""
-            val = (metric,round(item, 4))        
-            #cursordb.execute(sql, val)
-            #db.commit()
-
-
-
-    for i in n_prediction:
-        pmax=prediction_max1h[i]
-        pmax=prediction_max1h[i]
-        pmax=prediction_max1h[i]
-        sql = """INSERT INTO 1hprediction (metric,max, min,mean,) VALUES (%s,%s,%s);"""
-        val = (metric,max1h,min1h,mean1h,std1h,
-        round(aut, 4),round(stat, 4), round(seas, 4), 
-        pmax,)
         cursordb.execute(sql, val)
         db.commit()
+
+    #------------------------SQL INSERT Stationarity------------------------#
+    list_stat = json.loads(msg['Stationarity'])    
+    sql = """INSERT INTO 1hStationarity (metric,adf,pvalue,usedlag,nobs,criticalvalues,icbest) VALUES (%s,%s,%s,%s,%s,%s,%s);"""
+    val = (metric,round(list_stat[0], 4),round(list_stat[1], 4),round(list_stat[2], 4),round(list_stat[3], 4),str(list_stat[4]),round(list_stat[5], 4))        
+    cursordb.execute(sql, val)
+    db.commit()
+
+    #------------------------SQL INSERT Seasonability-----------------------#
+    list_seas = json.loads(msg['Seasonability'])
+    for item in list_seas:    
+        sql = """INSERT INTO 1hSeasonability (metric,value) VALUES (%s,%s);"""
+        val = (metric,round(item, 4))        
+        cursordb.execute(sql, val)
+        db.commit()
+
+
+    list_pmax =msg['Prediction_MAX']
+    list_pmin =msg['Prediction_min']
+    list_pmean =msg['Prediction_Mean']
+    for i in range(n_prediction):
+        
+        sql = """INSERT INTO 1hPrediction (metric,max,min,mean) VALUES (%s,%s,%s,%s);"""
+        val = (metric,list_pmax[i],list_pmin[i],list_pmean[i])
+        cursordb.execute(sql, val)
+        db.commit()
+
+    print('#--------INSERT SQL_INSERT_1H DONE!-------#')
+
+def SQL_INSERT_3H(metric, msg): 
+    metric = msg['Metric'] 
+    max= msg['MAX_value'] 
+    min= msg['min_value'] 
+    mean= msg['mean_value'] 
+    std = msg['std_value']
+        
+    sql = """INSERT INTO 3hMetrics (metric,max,min,mean,std) VALUES (%s,%s,%s,%s,%s);"""
+    val = (metric,max,min,mean,std)
+    cursordb.execute(sql, val)
+    db.commit()
+
+    #-----------------------SQL INSERT Autocorrelation----------------------#
+    list_aut = json.loads(msg['Autocorrelation'])
+    for item in list_aut:    
+        sql = """INSERT INTO 3hAutocorrelation (metric,value) VALUES (%s,%s);"""
+        val = (metric,round(item, 4))        
+        cursordb.execute(sql, val)
+        db.commit()
+
+    #------------------------SQL INSERT Stationarity------------------------#
+    list_stat = json.loads(msg['Stationarity'])    
+    sql = """INSERT INTO 3hStationarity (metric,adf,pvalue,usedlag,nobs,criticalvalues,icbest) VALUES (%s,%s,%s,%s,%s,%s,%s);"""
+    val = (metric,round(list_stat[0], 4),round(list_stat[1], 4),round(list_stat[2], 4),round(list_stat[3], 4),str(list_stat[4]),round(list_stat[5], 4))        
+    cursordb.execute(sql, val)
+    db.commit()
+
+    #------------------------SQL INSERT Seasonability-----------------------#
+    list_seas = json.loads(msg['Seasonability'])
+    for item in list_seas:    
+        sql = """INSERT INTO 3hSeasonability (metric,value) VALUES (%s,%s);"""
+        val = (metric,round(item, 4))        
+        cursordb.execute(sql, val)
+        db.commit()
+
+
+    list_pmax =msg['Prediction_MAX']
+    list_pmin =msg['Prediction_min']
+    list_pmean =msg['Prediction_Mean']
+    for i in range(n_prediction):
+        
+        sql = """INSERT INTO 3hPrediction (metric,max,min,mean) VALUES (%s,%s,%s,%s);"""
+        val = (metric,list_pmax[i],list_pmin[i],list_pmean[i])
+        cursordb.execute(sql, val)
+        db.commit()
+
+    print('#--------INSERT SQL_INSERT_3H DONE!-------#')
+
+
+def SQL_INSERT_12H(metric, msg): 
+    metric = msg['Metric'] 
+    max= msg['MAX_value'] 
+    min= msg['min_value'] 
+    mean= msg['mean_value'] 
+    std = msg['std_value']
+        
+    sql = """INSERT INTO 12hMetrics (metric,max,min,mean,std) VALUES (%s,%s,%s,%s,%s);"""
+    val = (metric,max,min,mean,std)
+    cursordb.execute(sql, val)
+    db.commit()
+
+    #-----------------------SQL INSERT Autocorrelation----------------------#
+    list_aut = json.loads(msg['Autocorrelation'])
+    for item in list_aut:    
+        sql = """INSERT INTO 12hAutocorrelation (metric,value) VALUES (%s,%s);"""
+        val = (metric,round(item, 4))        
+        cursordb.execute(sql, val)
+        db.commit()
+
+    #------------------------SQL INSERT Stationarity------------------------#
+    list_stat = json.loads(msg['Stationarity'])    
+    sql = """INSERT INTO 12hStationarity (metric,adf,pvalue,usedlag,nobs,criticalvalues,icbest) VALUES (%s,%s,%s,%s,%s,%s,%s);"""
+    val = (metric,round(list_stat[0], 4),round(list_stat[1], 4),round(list_stat[2], 4),round(list_stat[3], 4),str(list_stat[4]),round(list_stat[5], 4))        
+    cursordb.execute(sql, val)
+    db.commit()
+
+    #------------------------SQL INSERT Seasonability-----------------------#
+    list_seas = json.loads(msg['Seasonability'])
+    for item in list_seas:    
+        sql = """INSERT INTO 12hSeasonability (metric,value) VALUES (%s,%s);"""
+        val = (metric,round(item, 4))        
+        cursordb.execute(sql, val)
+        db.commit()
+
+
+    list_pmax =msg['Prediction_MAX']
+    list_pmin =msg['Prediction_min']
+    list_pmean =msg['Prediction_Mean']
+    for i in range(n_prediction):
+        
+        sql = """INSERT INTO 12hPrediction (metric,max,min,mean) VALUES (%s,%s,%s,%s);"""
+        val = (metric,list_pmax[i],list_pmin[i],list_pmean[i])
+        cursordb.execute(sql, val)
+        db.commit()
+
+    print('#--------INSERT SQL_INSERT_12H DONE!-------#')
+        
 
 print('#------------Pollin start!------------#')
 while True:
@@ -114,83 +220,24 @@ while True:
 
     #print('Received message: {}'.format(msg.value().decode('utf-8')))
     timing = msg.key() 
+    t=str(timing)
     msg = json.loads(msg.value())
     print("")
     #print(timing)
     #print(msg)
-    SQL_INSERT_1H(timing, msg) 
+    if str(timing) == "b'1h'":
+        SQL_INSERT_1H(timing, msg) 
+    if str(timing) == "b'3h'":
+        SQL_INSERT_3H(timing, msg) 
+    if str(timing) == "b'12h'":
+        SQL_INSERT_12H(timing, msg) 
     
 
    
 
     
 
-    """ key='CpuLoad'
-    msg={
-        "1h":{
-            "Metrics": {
-                "max":1,
-                "min": 2,
-                "mean": 3,
-                "std": 4
-            } ,
-            "Statistics":{
-                "Autocorrelation": [1,2,3,4,5,6,7,8,9],
-                "Stazionarietà": [1,2,3,4,5,6,7,8,9],
-                "Stagionalità": [1,2,3,4,5,6,7,8,9],
-            } ,
-            "Prediction" : {
-                "Prediction_Max": [1,2,3,4,5],
-                "Prediction_Min": [1,2,3,4,5],
-                "Prediction_Mean": [1,2,3,4,5],
-            }
-        },
-        "3h":{
-            "Metrics": {
-                "max":5,
-                "min": 6,
-                "mean": 7,
-                "std": 8
-            } ,
-             "Metadati":{
-                "Autocorrelation": [3,2,3,4,5,6,7,8,9],
-                "Stazionarietà": [3,2,3,4,5,6,7,8,9],
-                "Stagionalità": [3,2,3,4,5,6,7,8,9],
-            } ,
-            "Prediction" : {
-                "Prediction_Max": [3,2,3,4,5],
-                "Prediction_Min": [3,2,3,4,5],
-                "Prediction_Mean": [3,2,3,4,5],
-            }
-        },
-        "12h":{
-            "Metrics": {
-                "max":9,
-                "min": 10,
-                "mean": 11,
-                "std": 12
-            } ,
-             "Metadati":{
-                "Autocorrelation": [12,2,3,4,5,6,7,8,9],
-                "Stazionarietà": [12,2,3,4,5,6,7,8,9],
-                "Stagionalità": [12,2,3,4,5,6,7,8,9],
-            } ,
-            "Prediction" : {
-                "Prediction_Max": [12,2,3,4,5],
-                "Prediction_Min": [12,2,3,4,5],
-                "Prediction_Mean": [12,2,3,4,5],
-            }
-        }
-        
-    } 
-
-    data1H = msg['1h']    
-    #
     
-    
-
-    data = msg
-    print(data) """
 
     
 c.close()
@@ -296,4 +343,16 @@ while True:
 # CREATE TABLE prediction_mean (ID INT AUTO_INCREMENT, metric varchar(255), timestamp varchar(255), value varchar(255), duration varchar(255),PRIMARY KEY(ID) );
 # CREATE TABLE prediction_min (ID INT AUTO_INCREMENT, metric varchar(255), timestamp varchar(255), value varchar(255), duration varchar(255),PRIMARY KEY(ID) );
 # CREATE TABLE prediction_max (ID INT AUTO_INCREMENT, metric varchar(255), timestamp varchar(255), value varchar(255), duration varchar(255),PRIMARY KEY(ID) );
+# 
+"""INSERT INTO 1hMetrics (metric,max,min,mean,std) VALUES (%s,%s,%s,%s,%s);"""
+"""INSERT INTO 1hAutocorrelation (metric,value) VALUES (%s,%s);"""
+"""INSERT INTO 1hStationarity (metric,adf,pvalue,usedlag,nobs,criticalvalues,icbest) VALUES (%s,%s,%s,%s,%s,%s,%s);"""
+"""INSERT INTO 1hPrediction (metric,max,min,mean) VALUES (%s,%s,%s);"""
+"""INSERT INTO 1hSeasonability (metric,value) VALUES (%s,%s);"""
+#CREATE TABLE 1hMetrics (ID INT AUTO_INCREMENT, metric varchar(255), max DOUBLE,min DOUBLE,mean DOUBLE,std DOUBLE,PRIMARY KEY(ID));
+#CREATE TABLE 1hAutocorrelation (ID INT AUTO_INCREMENT, metric varchar(255),value DOUBLE,PRIMARY KEY(ID));
+#CREATE TABLE 1hStationarity (ID INT AUTO_INCREMENT, metric varchar(255),adf DOUBLE,pvalue DOUBLE,usedlag DOUBLE,nobs DOUBLE,criticalvalues varchar(255),icbest DOUBLE,PRIMARY KEY(ID));
+#CREATE TABLE 1hSeasonability (ID INT AUTO_INCREMENT, metric varchar(255),value DOUBLE,PRIMARY KEY(ID));
+#CREATE TABLE 1hPrediction (ID INT AUTO_INCREMENT, metric varchar(255), max DOUBLE,min DOUBLE,mean DOUBLE,PRIMARY KEY(ID));
+## 
 # """

@@ -43,13 +43,13 @@ print('#------------Connection succed !------------#\n')
 #print('#                     Now you can get on Prometheus all metrics you want ;)                     #\n')
 #--------------------------------------------FIRST-----------------------------------------------------#
 #----------------------------------------PROMETHEUS' QUERY---------------------------------------------#
-time_to_evaluate = ['3h', '1h']
+time_to_evaluate = ['3h','1h']
 metrics_to_evaluate = ['cpuLoad', 'cpuTemp', 'diskUsage', 'availableMem', 'networkThroughput'] #
 end_time = parse_datetime("now")
 chunk_size = timedelta(minutes=10)
 label_config = {'nodeName': 'sv122','job': 'summary'} 
 counter = 0
-
+performance_list = [] 
 
 
 for metric in metrics_to_evaluate: 
@@ -60,7 +60,6 @@ for metric in metrics_to_evaluate:
         maxValues_list = []
         meanValues_list = []
         stdValues_list = []
-        performance_list = [] 
         kafka_message = []
 
         start_time = parse_datetime(timing)  
@@ -146,16 +145,26 @@ for metric in metrics_to_evaluate:
         #print('                     ..........              \n')
         #print('                     ..........              \n')
         print("PREDICTION is on going ...                   ")
-        tsmodel_MAX = ExponentialSmoothing(MAX_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
-        tsmodel_min = ExponentialSmoothing(min_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
-        tsmodel_mean = ExponentialSmoothing(mean_resampling, trend='add', seasonal='add',seasonal_periods=5).fit() 
+        model_MAX = ExponentialSmoothing(MAX_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
+        model_min = ExponentialSmoothing(min_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
+        model_mean = ExponentialSmoothing(mean_resampling, trend='add', seasonal='add',seasonal_periods=5).fit() 
         
-        prediction_max = tsmodel_MAX.forecast(5) 
+        prediction_MAX =[]
+        t = model_MAX.forecast(5).to_dict()    
+        for key, value in t.items():
+            prediction_MAX.append(str(value))  
         #print("Prediction of MAX ---> \n", prediction_max)
-        prediction_min = tsmodel_min.forecast(5)  
+        prediction_min =[]
+        t = model_min.forecast(5).to_dict() 
+        for key, value in t.items():
+            prediction_min.append(str(value))  
         #print("Prediction of min ---> \n", prediction_min)  
-        prediction_mean = tsmodel_mean.forecast(5)        
+        prediction_mean =[]
+        t = model_mean.forecast(5).to_dict() 
+        for key, value in t.items():
+            prediction_mean.append(str(value))  
         #print("Prediction of mean ---> \n", prediction_mean) 
+
         t1_prediction = time.time()  
         #---------------------------Saving metrics computation time on API/performance------------------------------#
         monitoring_metrics = {
@@ -209,13 +218,11 @@ for metric in metrics_to_evaluate:
                 "std_value": std_value,                
                 "Autocorrelation": json.dumps(autocorrelation_list),
                 "Stationarity": json.dumps(stationarity),
-                "Seasonability": json.dumps(seasonability_list)
-                } #,
-                # "Prediction" : {
-                #     "Prediction_MAX": prediction_max,
-                #     "Prediction_min": prediction_min,
-                #     "Prediction_Mean": prediction_mean
-                # }                
+                "Seasonability": json.dumps(seasonability_list),
+                "Prediction_MAX": prediction_MAX,
+                "Prediction_min": prediction_min,
+                "Prediction_Mean": prediction_mean
+                }                
 
         #print('msg_kafka: \n', msg)
 
