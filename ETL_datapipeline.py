@@ -34,12 +34,12 @@ def delivery_callback(err, msg):
 #except KafkaExec as error:
 #    print('Error: ', error)
 
-print('#--------------------Connecting-------------#\n')
-print('                     ..........              \n')
-print('                     ..........              \n')
-print('                     ..........              \n')
+print('#-----------------Connecting-----------------#\n')
+print('                  ..........                  \n')
+print('                  ..........                  \n')
+print('                  ..........                  \n')
 prom = PrometheusConnect(url="http://15.160.61.227:29090", disable_ssl=True)
-print('#------------Connection succed !------------#\n')
+print('#------------Connection succed !-------------#\n')
 #print('#                     Now you can get on Prometheus all metrics you want ;)                     #\n')
 #--------------------------------------------FIRST-----------------------------------------------------#
 #----------------------------------------PROMETHEUS' QUERY---------------------------------------------#
@@ -53,8 +53,7 @@ performance_list = []
 
 
 for metric in metrics_to_evaluate: 
-   
-
+    print("\n",metric)      
     for timing in time_to_evaluate:    
         minValues_list = []
         maxValues_list = []
@@ -75,7 +74,7 @@ for metric in metrics_to_evaluate:
         #print('METRIC_DF -> ', metric_df)
         #metric_object_list = MetricsList(metric_data)
         #--------------------------Evaluation of MAX, min, mean and std_dev----------------------------#
-        print("Evaluation of MAX, min, mean and std_dev is on going")
+      #  print("Evaluation of MAX, min, mean and std_dev is on going")
         #print('                       ..........                    \n')
         #print('                       ..........                    \n')
         max_value = round(metric_df['value'].max(), 2)
@@ -101,7 +100,7 @@ for metric in metrics_to_evaluate:
         #-----------------------------------------------------------------------------------------------#
         #-----------------Evaluation of AutoCorrelation, Stationarity & Seasonability-------------------#
         t0_evaluation = time.time()
-        print("Evaluation of AutoCorrelation is on going ...")
+       # print("Evaluation of AutoCorrelation is on going ...")
         autocorrelation = acf(metric_df['value']) 
         autocorrelation_list = autocorrelation.tolist()
         del autocorrelation_list[0]
@@ -111,13 +110,13 @@ for metric in metrics_to_evaluate:
         # for autocorrelation_i in autocorrelation_list:
         #    print('AUTOCORRELATION ----> ', autocorrelation_i)
 
-        print("Evaluation of Stationariety is on going ...   ")
+      #  print("Evaluation of Stationariety is on going ...   ")
         stationarity = adfuller(metric_df['value'],autolag='AIC') 
        # print('STATIONARITY ----> ', stationarity)
         #-----------------------------------Packing message for Kafka (3/4)-----------------------------#
         #kafka_message.append(stationarity)
         #-----------------------------------------------------------------------------------------------#
-        print("Evaluation of Seasonability is on going ...   ")
+       # print("Evaluation of Seasonability is on going ...   ")
         seasonability = seasonal_decompose(metric_df['value'], model='additive', period=10)
         seasonability_list = seasonability.seasonal.tolist() 
         #-----------------------------------Packing message for Kafka (4/4)-----------------------------#
@@ -144,7 +143,7 @@ for metric in metrics_to_evaluate:
         #---------->PREDICTION
         #print('                     ..........              \n')
         #print('                     ..........              \n')
-        print("PREDICTION is on going ...                   ")
+        #print("PREDICTION is on going ...                   ")
         model_MAX = ExponentialSmoothing(MAX_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
         model_min = ExponentialSmoothing(min_resampling, trend='add', seasonal='add',seasonal_periods=5).fit()
         model_mean = ExponentialSmoothing(mean_resampling, trend='add', seasonal='add',seasonal_periods=5).fit() 
@@ -204,8 +203,7 @@ for metric in metrics_to_evaluate:
             f.write(str(monitoring_prediction))   
             f.write('\n')    
                 
-        counter += 1
-        print("\nCOUTER ---> ", counter) 
+        
 
     #     #--------------------------------Creating JSON to pack kafka message-------------------------#
        
@@ -231,16 +229,16 @@ for metric in metrics_to_evaluate:
         #    kafka_message.append(str(value))
     
     #print(json.dumps(kafkamessage))
-    
+        counter += 1
         try:
-            print("Sending message to Kafka is on going ...\n")
+            #print("Sending message to Kafka is on going ...")
             p.produce(topic, key=timing, value=json.dumps(msg), callback=delivery_callback)
-            print(p)
-            print("Message sent!\n")
+            print("COUTER -->",counter,"",timing,"",p)
+            #print("Message sent!")
         except BufferError:
             print('%% Local producer queue is full (%d messages awaiting delivery): try again\n' % len(p))
             p.poll(0)
-           
+
     #--------------------------------Creating JSON to pack kafka message-------------------------#
            
 
@@ -257,6 +255,16 @@ def get_incomes_1():
 @app.route('/performance')
 def get_incomes_2():
     return (performance_list)
+
+@app.route('/SLAset', methods = ['POST']) 
+def SLAset():
+    req = request.json 
+    j = 0
+    for i in range(len(req)):
+        metrics_to_evaluate[j] = req[str(i)]
+        j += 1
+   
+    return 1
 
 if __name__ == '__main__':
     app.run(debug = False, host='0.0.0.0', port=5000)

@@ -1,14 +1,29 @@
 Indirizzo prometheus: http://15.160.61.227:29090
 
-docker network create ...
+docker network create marchiterranova #percreare il network
 
 docker network ls #per verificare il network
 
-docker-compose up -d 
+docker-compose up -d # creazione dei container
 
-docker ps #per verificare i container e predere l'id di sql
+docker-compose stop # stop container
 
-docker exec -it 85ee8ccdc2ce bash 
+docker compose down --remove-orphans # eliminazione dei container
 
-mysql -u root -p test_DSB  #password root
+docker ps #per verificare il containerID e predere l'id di sql
 
+docker exec -it ee844336c1c7 bash #prendere ID del db e eseguirlo
+
+mysql -u root -p test_DSB  #per entrare dentro il db, password root
+
+#per creare le tabelle vedere il file database.sql
+
+python ETL_datapipeline.py
+
+python datastorage.py
+
+python dataretrierval.py
+
+python SLA_manager.py
+
+curl -i -X POST -H "Content-Type:application/json" -d "{"availableMem": [0, 90.44],  "cpuLoad": [0, 10.0],"cpuTemp": [0, 44.0],"diskUsage": [0, 2.9487],"realUsedMem": [0, 9.62]}" "http://localhost:5002/SLA_Manager"
