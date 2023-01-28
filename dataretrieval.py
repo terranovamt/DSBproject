@@ -2,7 +2,6 @@ from flask import Flask, jsonify
 import mysql.connector
 from mysql.connector import errorcode
 
-
 try:
     print('\n#--------------------Connecting DB-------------#\n')
     db = mysql.connector.connect(
@@ -26,83 +25,82 @@ try:
     def get_metrics():
         all = []
 
-        # 1hMetrics        
+        #------------------------------1hMetrics-------------------------#
         cursordb.execute("SELECT * FROM 1hMetrics;")
-        all.append("#####===---=====---1H-Metrics---=====---#####")
+        all.append("#---------------1H-Metrics-----------------#")
         for item in cursordb : all.append(item)
-
-        # 1hAutocorrelation
+        
+        #-------------------------1hAutocorrelation----------------------#
         cursordb.execute("SELECT * FROM 1hAutocorrelation;")
-        all.append("#####===---=====---1H-Autocorrelation---=====---#####")
+        all.append("#---------------1H-Autocorrelation-----------------#")
         for item in cursordb : all.append(item)
 
-        # 1hStationarity
+        #-------------------------1hStationarity-------------------------#
         cursordb.execute("SELECT * FROM 1hStationarity;")
-        all.append("#####===---=====---1H-Stationarity---=====---#####")
+        all.append("#---------------1H-Stationarity-----------------#")
         for item in cursordb : all.append(item)
         
-        # 1hSeasonability
+        #--------------------------1hSeasonability-----------------------# 
         cursordb.execute("SELECT * FROM 1hSeasonability;")
-        all.append("#####===---=====---1H-Seasonability---=====---#####")
+        all.append("#---------------1H-Seasonability-----------------#")
         for item in cursordb : all.append(item)
 
-        # 1hPrediction
+        #---------------------------1hPrediction-------------------------#
         cursordb.execute("SELECT * FROM 1hPrediction;")
-        all.append("#####===---=====---3H-Prediction---=====---#####")
+        all.append("#---------------3H-Prediction-----------------#")
         for item in cursordb : all.append(item)
 
-        # --====================================================-- #
-        
-        # 3hMetrics        
+        #-----------------------------------------------------------------#
+
+        #----------------------------3hMetrics----------------------------#       
         cursordb.execute("SELECT * FROM 3hMetrics;")
-        all.append("#####===---=====---3H-Metrics---=====---#####")
+        all.append("#---------------3H-Metrics-----------------#")
         for item in cursordb : all.append(item)
 
-        # 3hAutocorrelation
+        #-----------------------3hAutocorrelation-------------------------#
         cursordb.execute("SELECT * FROM 3hAutocorrelation;")
-        all.append("#####===---=====---3H-Autocorrelation---=====---#####")
+        all.append("#---------------3H-Autocorrelation-----------------#")
         for item in cursordb : all.append(item)
 
-        # 3hStationarity
+        #-------------------------3hStationarity--------------------------# 
         cursordb.execute("SELECT * FROM 3hStationarity;")
-        all.append("#####===---=====---3H-Stationarity---=====---#####")
+        all.append("#---------------3H-Stationarity-----------------#")
         for item in cursordb : all.append(item)
-                
-        # 3hSeasonability
+
+        #-------------------------3hSeasonability--------------------------#
         cursordb.execute("SELECT * FROM 3hSeasonability;")
-        all.append("#####===---=====---3H-Seasonability---=====---#####")
+        all.append("#---------------3H-Seasonability-----------------#")
         for item in cursordb : all.append(item)
 
-        # 3hPrediction
+        #--------------------------3hPrediction----------------------------#
         cursordb.execute("SELECT * FROM 3hPrediction;")
-        all.append("#####===---=====---3H-Prediction---=====---#####")
-        for item in cursordb : all.append(item)
-        
-        # --====================================================-- #
-        
-        # 12hMetrics        
+        all.append("#---------------3H-Prediction-----------------#")
+        for item in cursordb : all.append(item)        
+        #-----------------------------------------------------------------#
+
+        #---------------------------12hMetrics----------------------------#    
         cursordb.execute("SELECT * FROM 12hMetrics;")
-        all.append("#####===---=====---12H-Metrics---=====---#####")
+        all.append("#---------------12H-Metrics-----------------#")
         for item in cursordb : all.append(item)
 
-        # 12hAutocorrelation
+        #-----------------------12hAutocorrelation------------------------#
         cursordb.execute("SELECT * FROM 12hAutocorrelation;")
-        all.append("#####===---=====---12H-Autocorrelation---=====---#####")
+        all.append("#---------------12H-Autocorrelation-----------------#")
         for item in cursordb : all.append(item)
 
-        # 12hStationarity
+        #------------------------12hStationarity--------------------------#
         cursordb.execute("SELECT * FROM 12hStationarity;")
-        all.append("#####===---=====---12H-Stationarity---=====---#####")
-        for item in cursordb : all.append(item)
-                
-        # 12hSeasonability
-        cursordb.execute("SELECT * FROM 12hSeasonability;")
-        all.append("#####===---=====---12H-Seasonability---=====---#####")
+        all.append("#---------------12H-Stationarity-----------------#")
         for item in cursordb : all.append(item)
 
-        # 12hPrediction
+        #------------------------12hSeasonability-------------------------#
+        cursordb.execute("SELECT * FROM 12hSeasonability;")
+        all.append("#---------------12H-Seasonability-----------------#")
+        for item in cursordb : all.append(item)
+
+        #-------------------------12hPrediction---------------------------#
         cursordb.execute("SELECT * FROM 12hPrediction;")
-        all.append("#####===---=====---12H-Prediction---=====---#####")
+        all.append("#---------------12H-Prediction-----------------#")
         for item in cursordb : all.append(item)
          
         return jsonify(all)
@@ -112,19 +110,19 @@ try:
         a=[]
         sql = "SELECT * FROM 1hMetrics;"
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Metrics---=====---#####")
+        a.append("#---------------1H-Metrics-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hMetrics;"
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Metrics---=====---#####")
+        a.append("#---------------3H-Metrics-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hMetrics;"
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Metrics---=====---#####")
+        a.append("#---------------12H-Metrics-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
         
@@ -136,19 +134,19 @@ try:
 
         sql = "SELECT * FROM 1hMetrics WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Metrics---=====---#####")
+        a.append("#---------------1H-Metrics-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hMetrics WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Metrics---=====---#####")
+        a.append("#---------------3H-Metrics-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hMetrics WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Metrics---=====---#####")
+        a.append("#---------------12H-Metrics-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
@@ -159,19 +157,19 @@ try:
         a=[]
         sql = "SELECT * FROM 1hAutocorrelation;"
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Autocorrelation---=====---#####")
+        a.append("#---------------1H-Autocorrelation-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hAutocorrelation;"
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Autocorrelation---=====---#####")
+        a.append("#---------------3H-Autocorrelation-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hAutocorrelation;"
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Autocorrelation---=====---#####")
+        a.append("#---------------12H-Autocorrelation-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
         
@@ -183,19 +181,19 @@ try:
 
         sql = "SELECT * FROM 1hAutocorrelation WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Autocorrelation---=====---#####")
+        a.append("#---------------1H-Autocorrelation-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hAutocorrelation WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Autocorrelation---=====---#####")
+        a.append("#---------------3H-Autocorrelation-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hAutocorrelation WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Autocorrelation---=====---#####")
+        a.append("#---------------12H-Autocorrelation-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
@@ -206,19 +204,19 @@ try:
         a=[]
         sql = "SELECT * FROM 1hStationarity;"
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Stationarity---=====---#####")
+        a.append("#---------------1H-Stationarity-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hStationarity;"
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Stationarity---=====---#####")
+        a.append("#---------------3H-Stationarity-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hStationarity;"
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Stationarity---=====---#####")
+        a.append("#---------------12H-Stationarity-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
         
@@ -230,19 +228,19 @@ try:
 
         sql = "SELECT * FROM 1hStationarity WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Stationarity---=====---#####")
+        a.append("#---------------1H-Stationarity-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hStationarity WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Stationarity---=====---#####")
+        a.append("#---------------3H-Stationarity-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hStationarity WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Stationarity---=====---#####")
+        a.append("#---------------12H-Stationarity-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
@@ -253,19 +251,19 @@ try:
         a=[]
         sql = "SELECT * FROM 1hSeasonability;"
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Seasonability---=====---#####")
+        a.append("#---------------1H-Seasonability-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hSeasonability;"
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Seasonability---=====---#####")
+        a.append("#---------------3H-Seasonability-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hSeasonability;"
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Seasonability---=====---#####")
+        a.append("#---------------12H-Seasonability-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
         
@@ -277,19 +275,19 @@ try:
 
         sql = "SELECT * FROM 1hSeasonability WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Seasonability---=====---#####")
+        a.append("#---------------1H-Seasonability-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hSeasonability WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Seasonability---=====---#####")
+        a.append("#---------------3H-Seasonability-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hSeasonability WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Seasonability---=====---#####")
+        a.append("#---------------12H-Seasonability-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
@@ -300,19 +298,19 @@ try:
         a=[]
         sql = "SELECT * FROM 1hPrediction;"
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Prediction---=====---#####")
+        a.append("#---------------1H-Prediction-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hPrediction;"
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Prediction---=====---#####")
+        a.append("#---------------3H-Prediction-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hPrediction;"
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Prediction---=====---#####")
+        a.append("#---------------12H-Prediction-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
         
@@ -324,19 +322,19 @@ try:
 
         sql = "SELECT * FROM 1hPrediction WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---1H-Prediction---=====---#####")
+        a.append("#---------------1H-Prediction-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 3hPrediction WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---3H-Prediction---=====---#####")
+        a.append("#---------------3H-Prediction-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 
         sql = "SELECT * FROM 12hPrediction WHERE metric = '{0}';".format(name)
         cursordb.execute(sql)
-        a.append("#####===---=====---12H-Prediction---=====---#####")
+        a.append("#---------------12H-Prediction-----------------#")
         a.append("METRIC,MAX,MIN,MEAN,DEV_STD")
         for item in cursordb : a.append(item)
 

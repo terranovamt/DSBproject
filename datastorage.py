@@ -20,7 +20,6 @@ print('Available topics to consume: ', c.list_topics().topics)
   # Subscription sul topic
 c.subscribe(['promethuesdata'])
 
-
 #---------------------------------DataBase------------------------#
 try:
     print('\n#--------------------Connecting DB-------------#\n')
@@ -58,6 +57,7 @@ except mysql.connector.Error as err:
         print("BAD_DB")
     else:
         print(err)
+
 #------------------------------SQL INSERT------------------------------#
 
 def SQL_INSERT_1H(metric, msg): 
@@ -95,7 +95,7 @@ def SQL_INSERT_1H(metric, msg):
         cursordb.execute(sql, val)
         db.commit()
 
-
+    #------------------------SQL INSERT Predictions'-----------------------#
     list_pmax =msg['Prediction_MAX']
     list_pmin =msg['Prediction_min']
     list_pmean =msg['Prediction_Mean']
@@ -192,6 +192,7 @@ def SQL_INSERT_12H(metric, msg):
         cursordb.execute(sql, val)
         db.commit()
 
+    #------------------------SQL INSERT Predictions'-----------------------#
 
     list_pmax =msg['Prediction_MAX']
     list_pmin =msg['Prediction_min']
@@ -205,7 +206,7 @@ def SQL_INSERT_12H(metric, msg):
 
     print('#--------INSERT SQL_INSERT_12H DONE!-------#')
         
-
+#------------------------Polling-----------------------#
 print('#------------Pollin start!------------#')
 while True:
     
@@ -231,128 +232,6 @@ while True:
         SQL_INSERT_3H(timing, msg) 
     if str(timing) == "b'12h'":
         SQL_INSERT_12H(timing, msg) 
-    
-
-   
-
-    
-
-    
-
-    
+     
 c.close()
-####################
-
-
-
-
-
-
-
-
-# polling kafka
-while True:
-    print('#DATA storage#\n')
-    msg = consumer.poll(1.0)
-    if msg is None:
-        print('#  ERROR: msg is void #\n')
-        continue
-    elif msg.error():
-        print("consumer error: {}".format(msg.error()))
-        continue
-    else:
-        print('#------------Pollin kafka ------------#\n')
-        msg_key = msg.key() 
-        msg_value = msg.value()
-        data = json.loads(msg_value) 
-        print(data);
-         #--------------------------
-        max = data['Metric']['max']
-        min = data['Metric']['min']
-        mean = data['Metric']['mean']
-        std = data['Metric']['std']
-
-    # Selezione dei dati ed invio al database:
-
-        clientSQL_Metric(msg_key, max, min, mean, std, data['Metric']['duration'])
-    #---------------------------
-        autocorrelation = data['Metadati']['Autocorrelation']
-        lista_autocorrelation = json.loads(autocorrelation)
-        clientSQL_Autocorrelation(msg_key, lista_autocorrelation, data['Metadati']['duration'])
-    #-----------------------------
-        seasonability = data['Metadati']['Stagionalità']
-        list_seasonal = json.loads(seasonability)
-        clientSQL_Seasonability(msg_key, list_seasonal, data['Metadati']['duration'])
-    #-------------------------------
-        stationarity = data['Metadati']['Stazionarietà']
-        list_stat = json.loads(stationarity)
-        clientSQL_Stationarity(msg_key, list_stat, data['Metadati']['duration'])
-    #-------------------------------
-        prediction_max = data['Predizione']['Prediction_Max']
-        prediction_min = data['Predizione']['Prediction_Mean']
-        prediction_mean = data['Predizione']['Prediction_Min']
-
-    # -------------------------------
-        list_max = json.loads(prediction_max) # lista dei valori di massimo predetti
-        if (len(list_max) == 0):
-            pass
-        else:
-            clientSQL_Prediction_Max(msg_key, list_max, data['Predizione']['duration'])
-            pass
-    # -------------------------------
-        list_min = json.loads(prediction_min)  # lista dei valori di minimo predetti
-        if (len(list_min) == 0):
-            pass
-        else:
-            clientSQL_Prediction_Min(msg_key, list_min, data['Predizione']['duration'])
-            pass
-    # -------------------------------
-        list_mean = json.loads(prediction_mean)  # lista dei valori di media predetti
-        if (len(list_mean) == 0):
-            pass
-        else:
-            clientSQL_Prediction_Mean(msg_key, list_mean, data['Predizione']['duration'])
-            pass
-        print("All Saved in DB")
-
-#consumer.close()
-#db.close()
-
-#Tabelle SQL
-# """
-# CREATE TABLE metrics ( 
-# ID INT AUTO_INCREMENT, 
-# metric varchar(255),
-# max DOUBLE, 
-# min DOUBLE, 
-# mean DOUBLE, 
-# dev_std DOUBLE, 
-# duration varchar(255) 
-# ,PRIMARY KEY (ID));
-# CREATE TABLE autocorrelation (ID INT AUTO_INCREMENT, 
-# metric varchar(255)
-# ,value DOUBLE,
-#  duration varchar(255)
-# PRIMARY KEY(ID));
-# CREATE TABLE seasonability (ID INT AUTO_INCREMENT, 
-# metric varchar(255),
-# value DOUBLE,
-# duration varchar(255),
-#  PRIMARY KEY(ID));
-# CREATE TABLE stationarity (ID INT AUTO_INCREMENT, metric varchar(255),p_value DOUBLE,critical_values varchar(255),duration varchar(255), PRIMARY KEY(ID));
-# CREATE TABLE prediction_mean (ID INT AUTO_INCREMENT, metric varchar(255), timestamp varchar(255), value varchar(255), duration varchar(255),PRIMARY KEY(ID) );
-# CREATE TABLE prediction_min (ID INT AUTO_INCREMENT, metric varchar(255), timestamp varchar(255), value varchar(255), duration varchar(255),PRIMARY KEY(ID) );
-# CREATE TABLE prediction_max (ID INT AUTO_INCREMENT, metric varchar(255), timestamp varchar(255), value varchar(255), duration varchar(255),PRIMARY KEY(ID) );
-# 
-"""INSERT INTO 1hMetrics (metric,max,min,mean,std) VALUES (%s,%s,%s,%s,%s);"""
-"""INSERT INTO 1hAutocorrelation (metric,value) VALUES (%s,%s);"""
-"""INSERT INTO 1hStationarity (metric,adf,pvalue,usedlag,nobs,criticalvalues,icbest) VALUES (%s,%s,%s,%s,%s,%s,%s);"""
-"""INSERT INTO 1hPrediction (metric,max,min,mean) VALUES (%s,%s,%s);"""
-"""INSERT INTO 1hSeasonability (metric,value) VALUES (%s,%s);"""
-#CREATE TABLE 1hMetrics (ID INT AUTO_INCREMENT, metric varchar(255), max DOUBLE,min DOUBLE,mean DOUBLE,std DOUBLE,PRIMARY KEY(ID));
-#CREATE TABLE 1hAutocorrelation (ID INT AUTO_INCREMENT, metric varchar(255),value DOUBLE,PRIMARY KEY(ID));
-#CREATE TABLE 1hStationarity (ID INT AUTO_INCREMENT, metric varchar(255),adf DOUBLE,pvalue DOUBLE,usedlag DOUBLE,nobs DOUBLE,criticalvalues varchar(255),icbest DOUBLE,PRIMARY KEY(ID));
-#CREATE TABLE 1hSeasonability (ID INT AUTO_INCREMENT, metric varchar(255),value DOUBLE,PRIMARY KEY(ID));
-#CREATE TABLE 1hPrediction (ID INT AUTO_INCREMENT, metric varchar(255), max DOUBLE,min DOUBLE,mean DOUBLE,PRIMARY KEY(ID));
-## 
-# """
+db.close()
