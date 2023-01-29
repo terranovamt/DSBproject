@@ -11,7 +11,6 @@ range_list = []
 violation_list = []
 futureViolation_list = []
 
-
 def getViolation():
     time_to_evaluate = ['12h','3h','1h']
     label_config = {'nodeName': 'sv122','job': 'summary'} 
@@ -70,7 +69,7 @@ def getViolation():
    
 
 def post_to_ETL(data): 
-    url = 'http://localhost:5000/SLAset'
+    url = 'http://etl_data_pipeline:5000/SLAset'
     SLAset = list(data.keys())
     range = list(data.values())
 
@@ -179,6 +178,6 @@ def predict_ViolationsName():
     return jsonify(status)
 
 if __name__ == '__main__':
-    app.run(debug = False, host='0.0.0.0', port=5002)
+    app.run(debug = False, host='0.0.0.0', port=5100)
 
  
