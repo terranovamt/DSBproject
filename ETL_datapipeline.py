@@ -12,7 +12,7 @@ import time
 import sys
 import pandas as pd
 
-broker = "localhost:29092"
+broker = "kafka:9092"
 topic = "promethuesdata"
 conf = {'bootstrap.servers': broker}
 p = Producer(**conf)
@@ -215,7 +215,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def get_incomes_0():
-    return ('localhost:5000/all -> print msg  localhost:5000/performance -> print performance')
+    return ('/all -> print msg  /performance -> print performance')
 
 @app.route('/all')
 def get_incomes_1():

@@ -3,7 +3,7 @@ version: "3.2"
 services:
   etl_data_pipeline:
     build:
-      context: . # path relativo da docker-compose a Dockerfile
+      context: . 
       dockerfile: etl.Dockerfile
     restart: always
     ports:
@@ -11,13 +11,13 @@ services:
 
   data_storage:
     build:
-      context: . # path relativo da docker-compose a Dockerfile
+      context: . 
       dockerfile: datastorage.Dockerfile
     restart: always
 
   data_retrieval:
     build:
-      context: . # path relativo da docker-compose a Dockerfile
+      context: . 
       dockerfile: dataretrieval.Dockerfile
     restart: always
     ports:
@@ -25,7 +25,7 @@ services:
 
   sla_manager:
     build:
-      context: . # path relativo da docker-compose a Dockerfile
+      context: . 
       dockerfile: sla.Dockerfile
     restart: always
     ports:

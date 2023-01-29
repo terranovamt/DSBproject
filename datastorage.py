@@ -10,7 +10,7 @@ n_prediction=5
 
 #----------------------Consumer Configuration------------------------#
 c = Consumer({
-     'bootstrap.servers': 'localhost:29092',
+     'bootstrap.servers': 'kafka:9092',
      'group.id': 'mygroup',
      'auto.offset.reset': 'earliest'
 })
@@ -24,7 +24,7 @@ c.subscribe(['promethuesdata'])
 try:
     print('\n#--------------------Connecting DB-------------#\n')
     db = mysql.connector.connect(
-        host="localhost",
+        host="mysqldb",
         user="root",
         password="root",
         database="test_DSB",
