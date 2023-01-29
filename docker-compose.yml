@@ -23,13 +23,13 @@ services:
     ports:
       - "5050:5050"
 
-  # sla_manager:
-  #   build:
-  #     context: . # path relativo da docker-compose a Dockerfile
-  #     dockerfile: sla.Dockerfile
-  #   restart: always
-  #   ports:
-  #     - "5002:5002"
+  sla_manager:
+    build:
+      context: . # path relativo da docker-compose a Dockerfile
+      dockerfile: sla.Dockerfile
+    restart: always
+    ports:
+      - "5100:5100"
 
 networks:
   default:
