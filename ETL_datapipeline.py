@@ -233,7 +233,7 @@ def SLAset():
         metrics_to_evaluate[j] = req[str(i)]
         j += 1
    
-    return 1
+    return metrics_to_evaluate
 
 if __name__ == '__main__':
     app.run(debug = False, host='0.0.0.0', port=5000)
