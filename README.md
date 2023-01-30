@@ -36,13 +36,13 @@
 
 ## List of API url
 
-1. GET ETLdatapipeline to print all Kafka message send --> http://localhost:5000/all
-2. GET ETLdatapipeline to print performace times of metrics, evaluation and prediction --> http://localhost:5000/performance
+1. GET ETLdatapipeline to print all Kafka message sent --> http://localhost:5000/all
+2. GET ETLdatapipeline to print performace times of metrics, evaluation, and prediction --> http://localhost:5000/performance
 3. GET Dataretrival to print all DB content --> http://localhost:5050/all
-4. To prin single table you can use name of table like: metrics, autocorrelation, stationarity, seasonability, prediction; also add name of metrics. See following examples:
+4. To print single table you can use name of table like: metrics, autocorrelation, stationarity, seasonability, prediction; also add name of metrics. See following examples:
    http://localhost:5050/metrics or http://localhost:5050/prediction/<name_of_metric>
 
-> Read following paragraph after you can run this command
+> After reading paragraph, you can run below commands
 
 5. GET SLA_manager to print all SLA status --> http://localhost:5100/SLA_status
 
